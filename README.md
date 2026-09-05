@@ -18,6 +18,7 @@
 
 - **Dashboard de Control (Airtable Shared View):** https://airtable.com/app869BU6q32McaEq/shrTkmzqC0oj76FLK
 - **Base de datos en modo lectura:** https://airtable.com/app869BU6q32McaEq/shrTkmzqC0oj76FLK
+- **Video demo:** https://drive.google.com/file/d/1VLwE-eE7zCNHiMHGRCDXo3nEDVjrVxGK/view?usp=sharing
 
 ## 🧩 Resumen del sistema
 
@@ -39,4 +40,10 @@
 
 ## 🎥 Video demo
 
-`[PEGAR AQUÍ EL LINK AL VIDEO DE 3 MINUTOS]`
+**Link:** https://drive.google.com/file/d/1VLwE-eE7zCNHiMHGRCDXo3nEDVjrVxGK/view?usp=sharing
+
+El video muestra dos ejemplos completos de clasificación (Alta y Baja Prioridad):
+1. Carga de una nueva solicitud en Google Sheets (trigger)
+2. Ejecución del escenario en Make (IA clasificando en tiempo real)
+3. Resultado reflejado en las hojas "Alta Prioridad" y "Baja Prioridad"
+4. Vista del Dashboard de control en Airtable
