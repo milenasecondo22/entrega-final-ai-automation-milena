@@ -2,7 +2,7 @@
 
 **Curso:** AI Automation — Coderhouse
 **Alumna:** Milena Nogueira Secondo
-**Caso de uso:** Clasificación automática de solicitudes de presupuesto por seniority (SR/SSR/Junior) para una empresa de contratistas, con validación humana (HITL) antes de contactar al cliente final.
+**Caso de uso:** Clasificación automática de solicitudes de presupuesto por prioridad (Alta/Baja) para una empresa de contratistas, con validación humana (HITL) antes de contactar al cliente final.
 
 ---
 
@@ -12,7 +12,7 @@
 |---|---|
 | `Entrega-Final-Documentacion.pdf` | Documento con los 4 entregables: diagrama de arquitectura, manual de datos, matriz de costos y documentación de seguridad/resiliencia |
 | `blueprint-ecosistema-final.json` | Blueprint del escenario de Make, incluyendo la lógica del HITL |
-| `capturas/` | Screenshots de evidencia del flujo funcionando en Make (historial de ejecución, las 3 rutas) |
+| `capturas/` | Screenshots de evidencia del flujo funcionando en Make (historial de ejecución, las 2 rutas) |
 
 ## 🔗 Enlaces obligatorios
 
@@ -21,13 +21,13 @@
 
 ## 🧩 Resumen del sistema
 
-1. **Trigger:** Gmail detecta un email nuevo con asunto "PRESUPUESTO" (modo *From now on*, sin reprocesar histórico).
-2. **IA:** Make AI Toolkit (Categorize text) clasifica la solicitud en SR / SSR / Junior según M2, Inversión y Urgencia.
+1. **Trigger:** Google Sheets detecta una fila nueva (nueva solicitud de presupuesto) en la hoja "Solicitudes".
+2. **IA:** Make AI Toolkit (Categorize text) clasifica la solicitud en Prioridad Alta / Baja según M2, Inversión y Urgencia.
 3. **Memoria:** El resultado se escribe en Airtable (tabla *Solicitudes*) con Estado = "Procesado por IA" y Aprobado = FALSE.
-4. **Router:** Notifica al equipo interno vía Slack en el canal correspondiente (SR / SSR / Junior) — nunca al cliente.
+4. **Router:** Divide el flujo en 2 rutas mutuamente excluyentes (Alta / Baja), registrando cada una en Google Sheets.
 5. **HITL (obligatorio):** El sistema se detiene. Un humano revisa el registro en Airtable y marca el checkbox "Aprobado".
 6. **Salida multicanal:** Solo si Aprobado = TRUE, un segundo trigger dispara la respuesta al cliente por Gmail (con Thread-ID mapeado) y opcionalmente WhatsApp.
-7. **Resiliencia:** Error Handler tipo Break con 3 reintentos sobre el nodo de IA; los fallos se registran en la tabla *Registro de Errores*.
+7. **Resiliencia:** Error Handler (Retry automático con 3 reintentos) sobre el nodo de IA; los fallos se registran en la tabla *Registro de Errores*.
 
 ## ✅ Criterios de evaluación cubiertos
 
