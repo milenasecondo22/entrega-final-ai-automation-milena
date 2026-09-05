@@ -1,0 +1,161 @@
+{
+  "name": "Ecosistema Final - Clasificacion y Contacto con HITL",
+  "flow": [
+    {
+      "id": 10,
+      "module": "google-email:triggerWatchNewEmails",
+      "label": "TRIGGER 1: Gmail Watch Emails (From now on)",
+      "parameters": {
+        "folder": "UNREAD",
+        "subject": "PRESUPUESTO",
+        "format": "full",
+        "limit": 1
+      }
+    },
+    {
+      "id": 32,
+      "module": "ai-tools:Categorize",
+      "label": "IA: Make AI Toolkit - Categorize text",
+      "parameters": {
+        "model": "medium"
+      },
+      "mapper": {
+        "input": "{{10.fullTextBody}}",
+        "categories": [
+          { "name": "SR", "description": "+1000m2, >USD1.000.000, urgente" },
+          { "name": "SSR", "description": "150-1000m2, USD350k-1M, mediano plazo" },
+          { "name": "Junior", "description": "<150m2, <USD350.000, sin urgencia" }
+        ],
+        "maxOutputTokens": 50
+      },
+      "onerror": [
+        {
+          "id": 31,
+          "module": "builtin:Break",
+          "label": "Error Handler: 3 reintentos + registro de error",
+          "mapper": { "retry": true, "count": "3", "interval": "15" }
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "module": "airtable:createRecord",
+      "label": "Airtable: Add Record en tabla Solicitudes",
+      "mapper": {
+        "table": "Solicitudes",
+        "fields": {
+          "Cliente": "{{10.fromName}}",
+          "Email": "{{10.fromEmail}}",
+          "Categoria": "{{32.categories}}",
+          "Estado": "Procesado por IA",
+          "Aprobado": false
+        }
+      }
+    },
+    {
+      "id": 3,
+      "module": "builtin:BasicRouter",
+      "label": "Router - divide en 3 rutas por categoria",
+      "routes": [
+        {
+          "filter": {
+            "name": "Solicitudes SR",
+            "conditions": [{ "a": "{{32.categories}}", "o": "text:contain", "b": "SR" }]
+          },
+          "flow": [
+            {
+              "id": 5,
+              "module": "slack:CreateMessage",
+              "label": "Notificar equipo interno - canal solicitudes-sr",
+              "mapper": { "channel": "solicitudes-sr", "text": "Nueva solicitud SR de {{10.fromName}}. Revisar y aprobar en Airtable: {{link_registro}}" }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "Solicitudes SSR",
+            "conditions": [{ "a": "{{32.categories}}", "o": "text:contain", "b": "SSR" }]
+          },
+          "flow": [
+            {
+              "id": 16,
+              "module": "slack:CreateMessage",
+              "label": "Notificar equipo interno - canal solicitudes-ssr",
+              "mapper": { "channel": "solicitudes-ssr", "text": "Nueva solicitud SSR de {{10.fromName}}. Revisar y aprobar en Airtable: {{link_registro}}" }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "Solicitudes Junior",
+            "conditions": [{ "a": "{{32.categories}}", "o": "text:contain", "b": "Junior" }]
+          },
+          "flow": [
+            {
+              "id": 20,
+              "module": "slack:CreateMessage",
+              "label": "Notificar equipo interno - canal solicitudes-junior",
+              "mapper": { "channel": "solicitudes-junior", "text": "Nueva solicitud Junior de {{10.fromName}}. Revisar y aprobar en Airtable: {{link_registro}}" }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "hitl_flow_comment": "El siguiente escenario corre por separado, disparado por el cambio de campo Aprobado en Airtable. Se documenta a continuacion como segunda parte del ecosistema:",
+  "hitl_flow": [
+    {
+      "id": 50,
+      "module": "airtable:triggerWatchRecords",
+      "label": "TRIGGER 2 (HITL): Airtable Watch Records - Aprobado = TRUE",
+      "parameters": {
+        "table": "Solicitudes",
+        "watchField": "Aprobado",
+        "filter": "Aprobado = true"
+      }
+    },
+    {
+      "id": 51,
+      "module": "builtin:Filter",
+      "label": "Filtro de seguridad: Aprobado = TRUE Y Estado = Procesado por IA",
+      "filter": {
+        "conditions": [
+          { "a": "{{50.Aprobado}}", "o": "boolean:equal", "b": true },
+          { "a": "{{50.Estado}}", "o": "text:equal", "b": "Procesado por IA" }
+        ]
+      }
+    },
+    {
+      "id": 52,
+      "module": "google-email:sendEmail",
+      "label": "Gmail: Send Reply (Thread-ID mapeado)",
+      "mapper": {
+        "threadId": "{{10.threadId}}",
+        "to": "{{50.Email}}",
+        "subject": "Re: {{10.subject}}",
+        "body": "Hola {{50.Cliente}}, gracias por tu consulta. Te contactamos a la brevedad con el presupuesto."
+      }
+    },
+    {
+      "id": 53,
+      "module": "airtable:updateRecord",
+      "label": "Airtable: Update Record - Estado = Publicado",
+      "mapper": {
+        "table": "Solicitudes",
+        "recordId": "{{50.id}}",
+        "fields": { "Estado": "Publicado" }
+      }
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "sequential": false
+    },
+    "zone": "us2.make.com"
+  }
+}
